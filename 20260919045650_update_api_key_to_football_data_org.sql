@@ -1,0 +1,2 @@
+-- API keys are configured through the Supabase Edge Function secret FOOTBALL_DATA_API_KEY.
+-- This migration intentionally contains no credential.

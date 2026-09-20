@@ -1,0 +1,334 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== Calculator styles ===== */
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Table base — compact on mobile, normal on desktop */
+table th,
+table td {
+  padding: 5px 4px;
+  text-align: center;
+  font-size: 13px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+table th {
+  border-bottom: 1px solid #ccc;
+  font-weight: 600;
+  padding-bottom: 8px;
+  white-space: nowrap;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: #666;
+}
+
+tbody tr {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.total-row td {
+  font-weight: bold;
+  border-top: 1px solid #ccc;
+  padding-top: 10px;
+}
+
+/* Inputs — compact and fully editable */
+input.decimal {
+  width: 60px;
+  padding: 4px 3px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  color: #222;
+  box-sizing: border-box;
+  text-align: center;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  touch-action: manipulation;
+}
+
+input.decimal:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+input.decimal.small {
+  width: 56px;
+  white-space: nowrap;
+  font-size: 12px;
+  padding: 3px;
+  margin-top: 4px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.lay-field {
+  margin-bottom: 4px;
+}
+
+.lay-label {
+  font-size: 10px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.comm-input-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+
+.comm-input-cell input {
+  max-width: 48px;
+}
+
+.eff-odd-cell {
+  font-size: 13px;
+  color: #222;
+}
+
+.boost-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.boost-cell input.decimal {
+  max-width: 48px;
+}
+
+.boost-cell input.decimal:disabled {
+  background: #f2f2f2;
+  color: #aaa;
+}
+
+.cb-cell input.decimal {
+  max-width: 48px;
+}
+
+.cb-cell select {
+  width: 90px;
+  font-size: 12px;
+  padding: 3px;
+}
+
+.cb-cell input.decimal:disabled {
+  background: #f2f2f2;
+  color: #aaa;
+}
+
+/* ===== Features panel ===== */
+.features-panel {
+  background: #1c1c1e;
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.features-title {
+  color: #eee;
+  font-weight: 600;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  margin-right: 6px;
+}
+
+.feature-chip {
+  background: #2c2c2e;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #eee;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  min-width: 90px;
+  justify-content: center;
+  border: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.feature-chip:hover {
+  border-color: #555;
+}
+
+.feature-chip .check {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1.5px solid #777;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #fff;
+}
+
+.feature-chip.active .check {
+  background: #2ecc71;
+  border-color: #2ecc71;
+}
+
+.stat-box {
+  background: #2c2c2e;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #eee;
+  font-size: 11px;
+  text-align: center;
+  min-width: 120px;
+}
+
+.stat-box .stat-value {
+  background: #fff;
+  color: #222;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 14px;
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+.stat-box input.decimal {
+  width: 60px;
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* ===== Desktop overrides (>= 768px) ===== */
+@media (min-width: 768px) {
+  table th,
+  table td {
+    padding: 8px 7px;
+    font-size: 16px;
+  }
+
+  table th {
+    padding-bottom: 10px;
+    font-size: 14px;
+  }
+
+  input.decimal {
+    width: 75px;
+    padding: 5px;
+    font-size: 16px;
+  }
+
+  input.decimal.small {
+    width: 78px;
+    font-size: 14px;
+    padding: 4px;
+    margin-top: 5px;
+  }
+
+  .lay-label {
+    font-size: 12px;
+  }
+
+  .eff-odd-cell {
+    font-size: 16px;
+  }
+
+  .comm-input-cell input {
+    max-width: 60px;
+  }
+
+  .boost-cell input.decimal {
+    max-width: 60px;
+  }
+
+  .cb-cell input.decimal {
+    max-width: 60px;
+  }
+
+  .cb-cell select {
+    width: 110px;
+    font-size: 14px;
+    padding: 4px;
+  }
+
+  .features-panel {
+    padding: 18px 22px;
+    gap: 16px;
+  }
+
+  .features-title {
+    font-size: 15px;
+    margin-right: 10px;
+  }
+
+  .feature-chip {
+    padding: 14px 20px;
+    font-size: 14px;
+    min-width: 110px;
+  }
+
+  .feature-chip .check {
+    width: 16px;
+    height: 16px;
+    font-size: 11px;
+  }
+
+  .stat-box {
+    padding: 10px 18px;
+    font-size: 13px;
+    min-width: 150px;
+  }
+
+  .stat-box .stat-value {
+    padding: 6px 10px;
+    font-size: 16px;
+    margin-top: 6px;
+  }
+
+  .stat-box input.decimal {
+    width: 70px;
+    margin-top: 6px;
+  }
+}
+
+/* ===== Mobile table scroll container ===== */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.table-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 2px;
+}
+
+/* Prevent zoom on iOS when focusing inputs */
+@media (max-width: 430px) {
+  input.decimal,
+  input[type="text"],
+  select {
+    font-size: 16px;
+  }
+}
