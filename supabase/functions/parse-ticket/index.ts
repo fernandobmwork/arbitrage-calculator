@@ -4,16 +4,54 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const systemPrompt = `Você é um extrator especializado em bilhetes/calculadoras de arbitragem esportiva brasileiras. Analise o print inteiro, mesmo quando houver vários blocos, cabeçalho ou rodapé.
+const systemPrompt = `Você é um extrator especializado em bilhetes e calculadoras de arbitragem esportiva brasileiras. Sua tarefa é ler um PRINT inteiro e transformar tudo que estiver visível em uma operação estruturada.
 
-Objetivo: transformar o print em uma operação estruturada para uma calculadora de arbitragem.
+O usuário pode enviar prints de três layouts conhecidos hoje, mas você deve funcionar como um extrator UNIVERSAL: primeiro reconheça visualmente a estrutura e depois extraia os campos pela posição e pelos rótulos próximos, nunca por coordenadas fixas.
 
-Layouts conhecidos:
-1) Super Monitor: costuma mostrar "INVESTIR", data/hora, jogo, campeonato e cartões "Casa", "Empate", "Fora". Cada cartão mostra casa de aposta, odd e valor apostado. Alguns cartões podem indicar Freebet com presente/emoji. Na parte inferior aparecem "CONVERSÃO" e "LUCRO".
-2) Super Monitor em tabela: pode mostrar "CALCULADORA ML", "RESULTADO", "ODD", "APOSTA", "FIX", "FREEBET", "RETORNO" e "LUCRO %". Aqui é obrigatório capturar a coluna FREEBET quando existir e também o lucro/retorno.
-3) SureGoat: pode mostrar "Odd", "Odd Real", "Valor", "Lucro", "Freebet", "Dist.", "Fixo", além de "Total Apostado" e "Lucro Total %". O checkbox Freebet deve ser convertido em freebet=true para aquela linha. Capture o valor da coluna Valor como stake e a coluna Lucro como lucro da linha.
+LAYOUT 1 — SUPER MONITOR EM CARTÕES
+- Normalmente existe um cabeçalho com "INVESTIR R$ ... - DATA ÀS HORA".
+- Logo abaixo aparece o evento, por exemplo "Fortaleza x Athletic Club MG", e eventualmente o campeonato "Brasil - Serie B".
+- Há cartões separados para Casa, Empate e Fora.
+- Dentro de cada cartão aparecem o nome da casa de aposta, uma seta, opcionalmente a etiqueta PA, a odd e o valor em R$.
+- Um cartão pode ter presente/emoji e representar FREEBET. Nesse caso freebet=true para aquela linha.
+- O valor mostrado no cabeçalho "INVESTIR" representa o dinheiro efetivamente investido e pode ser menor que a soma dos valores das linhas quando uma das linhas é Freebet. Exemplo: linhas de R$ 251,48 + R$ 113,33 + R$ 100,00 podem ter INVESTIR R$ 364,81 porque R$ 100,00 é Freebet.
+- Na parte inferior podem aparecer "CONVERSÃO" e "LUCRO". CONVERSÃO NÃO é lucro percentual. Não use CONVERSÃO como profitPercent. O valor de "LUCRO R$ ..." é totalProfit.
 
-Retorne EXATAMENTE este formato JSON:
+LAYOUT 2 — SUPER MONITOR EM TABELA
+- Pode aparecer "CALCULADORA ML".
+- Colunas típicas: RESULTADO, ODD, COM%, APOSTA, FIX, FREEBET, RETORNO.
+- O nome da casa normalmente aparece na linha de RESULTADO, antes do resultado como "Betano", "Sportingbet", "Betbra" etc.
+- "CASA (1)", "EMPATE (X)" e "FORA (2)" representam outcomes.
+- A coluna FREEBET contém checkbox. Marcado = freebet=true naquela linha.
+- APOSTA é o valor da linha.
+- RETORNO não é necessariamente lucro. NÃO copie RETORNO para o campo profit quando o layout não tiver uma coluna explicitamente chamada LUCRO.
+- No rodapé pode aparecer "TOTAL APOSTADO" e "LUCRO %". Use esses valores como totalStake e profitPercent.
+- Se houver um valor explícito de LUCRO, use-o como totalProfit. Caso só exista LUCRO %, não invente totalProfit.
+
+LAYOUT 3 — SUREGOAT
+- Pode aparecer "Calculadora GOAT".
+- Colunas típicas: B/L, Odd, Odd Real, Comissão %, Valor, Lucro, Freebet, Dist., Fixo.
+- "BACK" indica mode=back. Só use mode=lay se aparecer LAY de forma explícita.
+- Odd é a odd digitada; Odd Real é a odd ajustada. Para o campo odd use a odd exibida na coluna Odd, não Odd Real, salvo se Odd não estiver legível.
+- Valor é o stake da linha.
+- Lucro é o lucro da linha e deve ir para profit.
+- Checkbox Freebet marcado = freebet=true.
+- O rodapé "Total Apostado" é totalStake e "Lucro Total %" é profitPercent.
+- Se existir valor de lucro total explícito, use totalProfit. Se não existir, quando todas as linhas têm Lucro, o lucro garantido da operação normalmente é o menor lucro entre as linhas; nesse caso você pode preencher totalProfit com esse mínimo e registrar em notes que foi calculado a partir do menor lucro das linhas.
+- Não confunda Odd Real, Valor, Lucro ou Total Apostado.
+
+RECONHECIMENTO VISUAL UNIVERSAL
+- Identifique o nome do jogo/evento procurando o maior título de evento próximo ao bloco de odds. Preserve a grafia visível.
+- Identifique cada casa de aposta pelo texto associado à linha/cartão da respectiva odd. Nunca atribua uma casa de uma linha à linha vizinha.
+- Identifique a odd pelo campo/coluna explicitamente rotulado Odd, ou pelo número destacado junto ao nome da casa no cartão do Super Monitor.
+- Identifique stake pelo rótulo Valor/Aposta/Investir/Total Apostado conforme o layout. Diferencie totalStake de stake da linha.
+- Identifique Freebet pelo checkbox marcado, emoji/presente ou indicação textual explícita.
+- Identifique lucro somente quando houver um rótulo explícito de LUCRO ou quando o layout SureGoat mostrar a coluna Lucro. Não transforme RETORNO ou CONVERSÃO em lucro.
+- Preserve casas como Bet365, Betano, Sportingbet, Novibet, BetfairSO, BrasilbetSO, Betvip, Betbra etc. exatamente como aparecem.
+- Se houver PA, Dist., Fixo, Comissão %, COM%, Retorno ou outros campos auxiliares, eles não devem ser confundidos com odd, stake ou lucro.
+- Se houver mais de uma calculadora/bloco no mesmo print, extraia o bloco que representa a operação principal mais completo. Se houver claramente duas operações independentes, use notes para explicar e priorize a primeira operação completa.
+
+FORMATO DE SAÍDA — RESPONDA SOMENTE JSON VÁLIDO
 {
   "source": "unknown|supermonitor|suregoat|other",
   "event": "",
@@ -37,26 +75,49 @@ Retorne EXATAMENTE este formato JSON:
   ]
 }
 
-Regras:
-- Não invente dados. Se algo não estiver legível, use null ou string vazia e explique em notes.
-- Preserve o nome da casa exatamente como aparece, inclusive Bet365, Betano, Sportingbet, Novibet, BetfairSO, BrasilbetSO etc.
-- Odd deve ser número decimal, aceitando vírgula ou ponto no print.
-- Valor/Aposta deve ser o valor monetário daquela linha. Para uma Freebet, o valor pode continuar sendo o valor exibido, mas freebet=true.
-- Lucro deve ser capturado quando o layout mostrar lucro por linha. Se só houver lucro total, use totalProfit e deixe lucro das linhas como null.
-- totalStake deve ser o total apostado exibido. Se não houver, some as apostas que não forem freebet quando isso for seguro.
-- totalProfit deve ser o lucro total exibido. Não confunda com retorno bruto.
-- profitPercent deve ser o percentual de lucro exibido, se houver.
-- mode é back para apostas normais. Use lay apenas se o print indicar explicitamente LAY. Caso contrário unknown.
-- outcome deve ser o resultado/mercado: Casa, Empate, Fora, ou o texto específico visível.
-- Identifique source pelo layout, não pelo domínio sozinho.
-- confidence deve ficar entre 0 e 1 e refletir a confiança na extração.
-- Responda SOMENTE com o JSON, sem markdown e sem comentários.`;
+REGRAS DE PRECISÃO
+- Não invente dados. Se não estiver legível, use null ou string vazia e explique em notes.
+- Números devem ser números JSON, sem R$, %, espaços ou símbolos.
+- Preserve casas decimais da odd. Ex.: 1,65 -> 1.65; 6,443 -> 6.443.
+- Valores monetários também devem ser números. Ex.: R$ 1.225,96 -> 1225.96.
+- totalStake deve ser o total explicitamente exibido pelo layout. No Super Monitor em cartões, use INVESTIR, que exclui o valor de uma Freebet quando o próprio print demonstra isso. No SureGoat, use Total Apostado exatamente como exibido.
+- profitPercent só deve ser preenchido quando houver um percentual de lucro explícito, como LUCRO % ou Lucro Total %. Nunca use CONVERSÃO como profitPercent.
+- totalProfit deve ser o lucro total explicitamente exibido. Se não existir, deixe null, exceto no SureGoat quando todas as linhas tiverem Lucro: nesse caso pode usar o menor lucro e explicar em notes.
+- Para cada linha, stake é o valor exibido naquela linha, mesmo se for Freebet. freebet=true identifica que esse valor não é dinheiro próprio.
+- outcome deve ser "Casa", "Empate", "Fora", ou o texto específico visível, como "CASA (1)".
+- mode=back para aposta normal. Use lay somente com indicação explícita.
+- confidence deve ficar entre 0 e 1 e refletir a confiança geral na extração.
+- notes deve conter apenas observações úteis, especialmente campos não legíveis, estimativas ou cálculos derivados.`;
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
+}
+
+function sanitizeTicket(ticket: any) {
+  const rows = Array.isArray(ticket?.rows) ? ticket.rows : [];
+  return {
+    source: ['unknown', 'supermonitor', 'suregoat', 'other'].includes(ticket?.source) ? ticket.source : 'unknown',
+    event: typeof ticket?.event === 'string' ? ticket.event.trim() : '',
+    league: typeof ticket?.league === 'string' ? ticket.league.trim() : '',
+    date: typeof ticket?.date === 'string' ? ticket.date.trim() : '',
+    totalStake: typeof ticket?.totalStake === 'number' && Number.isFinite(ticket.totalStake) ? ticket.totalStake : null,
+    totalProfit: typeof ticket?.totalProfit === 'number' && Number.isFinite(ticket.totalProfit) ? ticket.totalProfit : null,
+    profitPercent: typeof ticket?.profitPercent === 'number' && Number.isFinite(ticket.profitPercent) ? ticket.profitPercent : null,
+    confidence: typeof ticket?.confidence === 'number' && Number.isFinite(ticket.confidence) ? Math.max(0, Math.min(1, ticket.confidence)) : null,
+    notes: Array.isArray(ticket?.notes) ? ticket.notes.map(String).slice(0, 12) : [],
+    rows: rows.map((row: any) => ({
+      outcome: typeof row?.outcome === 'string' ? row.outcome.trim() : '',
+      bookmaker: typeof row?.bookmaker === 'string' ? row.bookmaker.trim() : '',
+      odd: typeof row?.odd === 'number' && Number.isFinite(row.odd) ? row.odd : null,
+      stake: typeof row?.stake === 'number' && Number.isFinite(row.stake) ? row.stake : null,
+      profit: typeof row?.profit === 'number' && Number.isFinite(row.profit) ? row.profit : null,
+      freebet: Boolean(row?.freebet),
+      mode: row?.mode === 'back' || row?.mode === 'lay' ? row.mode : 'unknown',
+    })),
+  };
 }
 
 Deno.serve(async (req) => {
@@ -110,7 +171,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'O modelo retornou um JSON inválido.' }, 502);
     }
 
-    return jsonResponse({ ticket });
+    return jsonResponse({ ticket: sanitizeTicket(ticket) });
   } catch (error) {
     return jsonResponse({ error: error instanceof Error ? error.message : 'Erro inesperado ao processar o print.' }, 500);
   }
