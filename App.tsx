@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Calculator, LayoutDashboard } from 'lucide-react';
+import { Calculator, LayoutDashboard, ScanSearch } from 'lucide-react';
 import ArbitrageCalculator from '@/components/ArbitrageCalculator';
 import Dashboard from '@/components/Dashboard';
+import TicketCapture from '@/TicketCapture';
 import { type CalculatorState, createDefaultState } from '@/lib/calc';
 import { supabase, type Match } from '@/lib/supabase';
 
-type Tab = 'calculator' | 'dashboard';
+type Tab = 'calculator' | 'capture' | 'dashboard';
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('calculator');
@@ -32,12 +33,12 @@ export default function App() {
 
   const tabs: { id: Tab; label: string; icon: typeof Calculator }[] = [
     { id: 'calculator', label: 'Calculadora', icon: Calculator },
+    { id: 'capture', label: 'Capturar bilhete', icon: ScanSearch },
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   ];
 
   return (
     <div className="min-h-screen bg-white text-[#222]">
-      {/* Top Nav */}
       <nav className="bg-[#1c1c1e] text-white px-6 py-3 flex items-center gap-6 sticky top-0 z-50">
         <span className="font-semibold text-lg flex items-center gap-2">
           <Calculator size={20} />
@@ -62,7 +63,6 @@ export default function App() {
         </div>
       </nav>
 
-      {/* Content */}
       <div className="p-5 max-w-[1300px] mx-auto text-[16px]">
         {tab === 'calculator' && (
           <ArbitrageCalculator
@@ -70,11 +70,10 @@ export default function App() {
             setState={setCalcState}
             selectedMatch={selectedMatch}
             setSelectedMatch={setSelectedMatch}
-            onBetSaved={() => {
-              triggerRefresh();
-            }}
+            onBetSaved={triggerRefresh}
           />
         )}
+        {tab === 'capture' && <TicketCapture onSaved={triggerRefresh} />}
         {tab === 'dashboard' && <Dashboard refreshKey={refreshKey} />}
       </div>
     </div>
