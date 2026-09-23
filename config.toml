@@ -3,3 +3,6 @@ verify_jwt = false
 
 [functions.update-results]
 verify_jwt = false
+
+[functions.capture-ticket]
+verify_jwt = false
