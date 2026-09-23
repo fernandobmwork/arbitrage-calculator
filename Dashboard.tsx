@@ -1,9 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
-import { TrendingUp, TrendingDown, DollarSign, Trophy, Clock, CheckCircle, XCircle, RefreshCw, Building2 } from 'lucide-react';
-import { supabase, type Bet } from '@/lib/supabase';
+import { TrendingUp, TrendingDown, DollarSign, Trophy, Clock, CheckCircle, XCircle, Building2, Gift } from 'lucide-react';
+import { supabase, type Bet } from '@/supabase';
 
 type Props = {
   refreshKey: number;
+};
+
+type CaptureState = {
+  source?: string;
+  freebetAmount?: number;
+  cashStake?: number;
+  totalProfit?: number | null;
+  profitPercent?: number | null;
+  rows?: Array<{ freebet?: boolean; stake?: number | null }>;
 };
 
 export default function Dashboard({ refreshKey }: Props) {
@@ -122,8 +131,6 @@ export default function Dashboard({ refreshKey }: Props) {
         </div>
       </div>
 
-
-      {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-5">
         {stats.map((stat, i) => {
           const Icon = stat.icon;
@@ -139,29 +146,19 @@ export default function Dashboard({ refreshKey }: Props) {
         })}
       </div>
 
-      {/* Summary bar */}
       <div className="flex gap-4 sm:gap-6 mb-4 text-xs sm:text-sm flex-wrap">
-        <div className="flex items-center gap-2">
-          <Clock size={16} className="text-gray-400" />
-          <span className="text-gray-600">{pendingCount} pendentes</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <CheckCircle size={16} className="text-green-500" />
-          <span className="text-gray-600">{wonCount} ganhas</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <XCircle size={16} className="text-red-500" />
-          <span className="text-gray-600">{lostCount} perdidas</span>
-        </div>
+        <div className="flex items-center gap-2"><Clock size={16} className="text-gray-400" /><span className="text-gray-600">{pendingCount} pendentes</span></div>
+        <div className="flex items-center gap-2"><CheckCircle size={16} className="text-green-500" /><span className="text-gray-600">{wonCount} ganhas</span></div>
+        <div className="flex items-center gap-2"><XCircle size={16} className="text-red-500" /><span className="text-gray-600">{lostCount} perdidas</span></div>
       </div>
 
-      {/* Bets Table */}
       <div className="table-scroll">
-        <table className="w-full border-collapse min-w-[700px]">
+        <table className="w-full border-collapse min-w-[820px]">
           <thead>
             <tr>
               <th className="text-left">Descrição</th>
               <th>Stake</th>
+              <th>Freebet</th>
               <th>Lucro</th>
               <th>ROI</th>
               <th>Green</th>
@@ -172,108 +169,51 @@ export default function Dashboard({ refreshKey }: Props) {
             </tr>
           </thead>
           <tbody>
-            {loading && (
-              <tr>
-                <td colSpan={9} className="text-center py-8 text-gray-400">
-                  Carregando apostas...
-                </td>
-              </tr>
-            )}
-            {!loading && bets.length === 0 && (
-              <tr>
-                <td colSpan={9} className="text-center py-8 text-gray-400">
-                  Nenhuma aposta registrada ainda. Use a calculadora e clique em "Salvar Aposta".
-                </td>
-              </tr>
-            )}
-            {!loading &&
-              bets.map((bet) => {
-                const profit = Number(bet.profit);
-                const stake = Number(bet.total_stake);
-                const pct = Number(bet.profit_percent);
-                const profitColor = profit < 0 ? '#c0392b' : profit > 0 ? '#2c7a2c' : '#222';
-                const date = new Date(bet.created_at).toLocaleDateString('pt-BR', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                });
+            {loading && <tr><td colSpan={10} className="text-center py-8 text-gray-400">Carregando apostas...</td></tr>}
+            {!loading && bets.length === 0 && <tr><td colSpan={10} className="text-center py-8 text-gray-400">Nenhuma aposta registrada ainda. Use a calculadora ou capture um bilhete.</td></tr>}
+            {!loading && bets.map((bet) => {
+              const profit = Number(bet.profit);
+              const stake = Number(bet.total_stake);
+              const pct = Number(bet.profit_percent);
+              const capture = (bet.calculator_state || {}) as CaptureState;
+              const isCaptured = capture.source === 'ticket-capture';
+              const freebetAmount = isCaptured
+                ? Number(capture.freebetAmount ?? (capture.rows || []).reduce((sum, row) => sum + (row.freebet ? Number(row.stake || 0) : 0), 0))
+                : 0;
+              const profitKnown = !isCaptured || capture.totalProfit != null;
+              const profitColor = profit < 0 ? '#c0392b' : profit > 0 ? '#2c7a2c' : '#222';
+              const date = new Date(bet.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
-                return (
-                  <tr key={bet.id} className="border-b border-gray-100">
-                    <td className="text-left py-2 text-xs sm:text-sm">{bet.description}</td>
-                    <td className="text-center text-xs sm:text-sm">R$ {stake.toFixed(2)}</td>
-                    <td className="text-center text-xs sm:text-sm" style={{ color: profitColor }}>
-                      R$ {profit.toFixed(2)}
-                    </td>
-                    <td className="text-center text-xs sm:text-sm" style={{ color: profitColor }}>
-                      {pct.toFixed(2)}%
-                    </td>
-                    <td className="text-center">
-                      {bet.winning_outcome ? (
-                        <span className="text-xs font-medium text-green-700 bg-green-100 px-2 py-1 rounded">
-                          {bet.winning_outcome}
-                        </span>
-                      ) : (
-                        <span className="text-gray-300">—</span>
-                      )}
-                    </td>
-                    <td className="text-center">
-                      {bet.bookmaker_green ? (
-                        <span className="text-xs font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded flex items-center gap-1 w-fit mx-auto">
-                          <Building2 size={10} />
-                          {bet.bookmaker_green}
-                        </span>
-                      ) : (
-                        <span className="text-gray-300">—</span>
-                      )}
-                    </td>
-                    <td className="text-center">
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${
-                          bet.status === 'won'
-                            ? 'bg-green-100 text-green-700'
-                            : bet.status === 'lost'
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-gray-100 text-gray-600'
-                        }`}
-                      >
-                        {bet.status === 'won' ? 'Ganha' : bet.status === 'lost' ? 'Perdida' : 'Pendente'}
-                      </span>
-                    </td>
-                    <td className="text-center text-sm text-gray-500">{date}</td>
-                    <td className="text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        {bet.status === 'pending' && (
-                          <>
-                            <button
-                              onClick={() => updateStatus(bet.id, 'won', 'Manual', '')}
-                              className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
-                              title="Marcar como ganha"
-                            >
-                              Ganhou
-                            </button>
-                            <button
-                              onClick={() => updateStatus(bet.id, 'lost')}
-                              className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
-                              title="Marcar como perdida"
-                            >
-                              Perdeu
-                            </button>
-                          </>
-                        )}
-                        <button
-                          onClick={() => deleteBet(bet.id)}
-                          className="px-2 py-1 text-xs bg-gray-100 text-gray-500 rounded hover:bg-gray-200 transition-colors"
-                          title="Excluir"
-                        >
-                          Excluir
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+              return (
+                <tr key={bet.id} className="border-b border-gray-100">
+                  <td className="text-left py-2 text-xs sm:text-sm">
+                    <div>{bet.description}</div>
+                    {isCaptured && <span className="inline-block mt-1 text-[10px] font-medium text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">Capturado por IA</span>}
+                  </td>
+                  <td className="text-center text-xs sm:text-sm">R$ {stake.toFixed(2)}</td>
+                  <td className="text-center">
+                    {freebetAmount > 0 ? (
+                      <span className="text-xs font-medium text-orange-700 bg-orange-100 px-2 py-1 rounded inline-flex items-center gap-1"><Gift size={11} /> R$ {freebetAmount.toFixed(2)}</span>
+                    ) : <span className="text-gray-300">—</span>}
+                  </td>
+                  <td className="text-center text-xs sm:text-sm" style={{ color: profitColor }}>{profitKnown ? `R$ ${profit.toFixed(2)}` : '—'}</td>
+                  <td className="text-center text-xs sm:text-sm" style={{ color: profitColor }}>{profitKnown ? `${pct.toFixed(2)}%` : '—'}</td>
+                  <td className="text-center">{bet.winning_outcome ? <span className="text-xs font-medium text-green-700 bg-green-100 px-2 py-1 rounded">{bet.winning_outcome}</span> : <span className="text-gray-300">—</span>}</td>
+                  <td className="text-center">{bet.bookmaker_green ? <span className="text-xs font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded flex items-center gap-1 w-fit mx-auto"><Building2 size={10} />{bet.bookmaker_green}</span> : <span className="text-gray-300">—</span>}</td>
+                  <td className="text-center"><span className={`px-2 py-1 rounded text-xs font-medium ${bet.status === 'won' ? 'bg-green-100 text-green-700' : bet.status === 'lost' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>{bet.status === 'won' ? 'Ganha' : bet.status === 'lost' ? 'Perdida' : 'Pendente'}</span></td>
+                  <td className="text-center text-sm text-gray-500">{date}</td>
+                  <td className="text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      {bet.status === 'pending' && <>
+                        <button onClick={() => updateStatus(bet.id, 'won', 'Manual', '')} className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors" title="Marcar como ganha">Ganhou</button>
+                        <button onClick={() => updateStatus(bet.id, 'lost')} className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors" title="Marcar como perdida">Perdeu</button>
+                      </>}
+                      <button onClick={() => deleteBet(bet.id)} className="px-2 py-1 text-xs bg-gray-100 text-gray-500 rounded hover:bg-gray-200 transition-colors" title="Excluir">Excluir</button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
