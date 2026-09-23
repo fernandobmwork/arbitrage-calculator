@@ -4,38 +4,6 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const schema = {
-  type: 'object',
-  properties: {
-    source: { type: 'string', enum: ['unknown', 'supermonitor', 'suregoat', 'other'] },
-    event: { type: 'string' },
-    league: { type: 'string' },
-    date: { type: 'string' },
-    totalStake: { type: ['number', 'null'] },
-    totalProfit: { type: ['number', 'null'] },
-    profitPercent: { type: ['number', 'null'] },
-    confidence: { type: ['number', 'null'] },
-    notes: { type: 'array', items: { type: 'string' } },
-    rows: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          outcome: { type: 'string' },
-          bookmaker: { type: 'string' },
-          odd: { type: ['number', 'null'] },
-          stake: { type: ['number', 'null'] },
-          profit: { type: ['number', 'null'] },
-          freebet: { type: 'boolean' },
-          mode: { type: 'string', enum: ['back', 'lay', 'unknown'] },
-        },
-        required: ['outcome', 'bookmaker', 'odd', 'stake', 'profit', 'freebet', 'mode'],
-      },
-    },
-  },
-  required: ['source', 'event', 'league', 'date', 'totalStake', 'totalProfit', 'profitPercent', 'confidence', 'notes', 'rows'],
-};
-
 const systemPrompt = `Você é um extrator especializado em bilhetes/calculadoras de arbitragem esportiva brasileiras. Analise o print inteiro, mesmo quando houver vários blocos, cabeçalho ou rodapé.
 
 Objetivo: transformar o print em uma operação estruturada para uma calculadora de arbitragem.
@@ -44,6 +12,30 @@ Layouts conhecidos:
 1) Super Monitor: costuma mostrar "INVESTIR", data/hora, jogo, campeonato e cartões "Casa", "Empate", "Fora". Cada cartão mostra casa de aposta, odd e valor apostado. Alguns cartões podem indicar Freebet com presente/emoji. Na parte inferior aparecem "CONVERSÃO" e "LUCRO".
 2) Super Monitor em tabela: pode mostrar "CALCULADORA ML", "RESULTADO", "ODD", "APOSTA", "FIX", "FREEBET", "RETORNO" e "LUCRO %". Aqui é obrigatório capturar a coluna FREEBET quando existir e também o lucro/retorno.
 3) SureGoat: pode mostrar "Odd", "Odd Real", "Valor", "Lucro", "Freebet", "Dist.", "Fixo", além de "Total Apostado" e "Lucro Total %". O checkbox Freebet deve ser convertido em freebet=true para aquela linha. Capture o valor da coluna Valor como stake e a coluna Lucro como lucro da linha.
+
+Retorne EXATAMENTE este formato JSON:
+{
+  "source": "unknown|supermonitor|suregoat|other",
+  "event": "",
+  "league": "",
+  "date": "",
+  "totalStake": null,
+  "totalProfit": null,
+  "profitPercent": null,
+  "confidence": null,
+  "notes": [],
+  "rows": [
+    {
+      "outcome": "",
+      "bookmaker": "",
+      "odd": null,
+      "stake": null,
+      "profit": null,
+      "freebet": false,
+      "mode": "back|lay|unknown"
+    }
+  ]
+}
 
 Regras:
 - Não invente dados. Se algo não estiver legível, use null ou string vazia e explique em notes.
@@ -58,7 +50,7 @@ Regras:
 - outcome deve ser o resultado/mercado: Casa, Empate, Fora, ou o texto específico visível.
 - Identifique source pelo layout, não pelo domínio sozinho.
 - confidence deve ficar entre 0 e 1 e refletir a confiança na extração.
-- Responda SOMENTE com o JSON que obedece ao schema.`;
+- Responda SOMENTE com o JSON, sem markdown e sem comentários.`;
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -97,7 +89,6 @@ Deno.serve(async (req) => {
           generationConfig: {
             temperature: 0,
             responseMimeType: 'application/json',
-            responseSchema: schema,
           },
         }),
       },
