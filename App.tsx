@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Calculator, LayoutDashboard } from 'lucide-react';
-import ArbitrageCalculator from '@/components/ArbitrageCalculator';
-import Dashboard from '@/components/Dashboard';
-import { type CalculatorState, createDefaultState } from '@/lib/calc';
-import { supabase, type Match } from '@/lib/supabase';
+import { Calculator, LayoutDashboard, ImagePlus } from 'lucide-react';
+import ArbitrageCalculator from './ArbitrageCalculator';
+import Dashboard from './Dashboard';
+import CaptureTicket from './CaptureTicket';
+import { type CalculatorState, createDefaultState } from './calc';
+import { supabase, type Match } from './supabase';
 
-type Tab = 'calculator' | 'dashboard';
+type Tab = 'calculator' | 'capture' | 'dashboard';
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('calculator');
@@ -32,14 +33,14 @@ export default function App() {
 
   const tabs: { id: Tab; label: string; icon: typeof Calculator }[] = [
     { id: 'calculator', label: 'Calculadora', icon: Calculator },
+    { id: 'capture', label: 'Capturar bilhete', icon: ImagePlus },
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   ];
 
   return (
     <div className="min-h-screen bg-white text-[#222]">
-      {/* Top Nav */}
-      <nav className="bg-[#1c1c1e] text-white px-6 py-3 flex items-center gap-6 sticky top-0 z-50">
-        <span className="font-semibold text-lg flex items-center gap-2">
+      <nav className="bg-[#1c1c1e] text-white px-3 sm:px-6 py-3 flex items-center gap-2 sm:gap-6 sticky top-0 z-50 overflow-x-auto">
+        <span className="font-semibold text-lg flex items-center gap-2 whitespace-nowrap">
           <Calculator size={20} />
           Arbitragem Pro
         </span>
@@ -50,7 +51,7 @@ export default function App() {
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${
                   tab === t.id ? 'bg-[#2c2c2e] text-white' : 'text-gray-400 hover:text-white hover:bg-[#2c2c2e]/50'
                 }`}
               >
@@ -62,7 +63,6 @@ export default function App() {
         </div>
       </nav>
 
-      {/* Content */}
       <div className="p-5 max-w-[1300px] mx-auto text-[16px]">
         {tab === 'calculator' && (
           <ArbitrageCalculator
@@ -70,11 +70,10 @@ export default function App() {
             setState={setCalcState}
             selectedMatch={selectedMatch}
             setSelectedMatch={setSelectedMatch}
-            onBetSaved={() => {
-              triggerRefresh();
-            }}
+            onBetSaved={triggerRefresh}
           />
         )}
+        {tab === 'capture' && <CaptureTicket onSaved={triggerRefresh} />}
         {tab === 'dashboard' && <Dashboard refreshKey={refreshKey} />}
       </div>
     </div>
