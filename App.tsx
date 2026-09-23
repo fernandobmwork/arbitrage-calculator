@@ -33,37 +33,42 @@ export default function App() {
 
   const tabs: { id: Tab; label: string; icon: typeof Calculator }[] = [
     { id: 'calculator', label: 'Calculadora', icon: Calculator },
-    { id: 'capture', label: 'Capturar bilhete', icon: ScanSearch },
+    { id: 'capture', label: 'Capturar', icon: ScanSearch },
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   ];
 
+  const renderTabButton = (t: (typeof tabs)[number], mobile = false) => {
+    const Icon = t.icon;
+    const active = tab === t.id;
+
+    return (
+      <button
+        key={t.id}
+        onClick={() => setTab(t.id)}
+        aria-current={active ? 'page' : undefined}
+        className={mobile
+          ? `flex flex-1 flex-col items-center justify-center gap-1 py-2 text-xs font-medium transition-colors ${active ? 'text-white' : 'text-gray-400'}`
+          : `px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${active ? 'bg-[#2c2c2e] text-white' : 'text-gray-400 hover:text-white hover:bg-[#2c2c2e]/50'}`}
+      >
+        <Icon size={mobile ? 20 : 16} />
+        <span>{t.label}</span>
+      </button>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-white text-[#222]">
-      <nav className="bg-[#1c1c1e] text-white px-6 py-3 flex items-center gap-6 sticky top-0 z-50">
-        <span className="font-semibold text-lg flex items-center gap-2">
+    <div className="min-h-screen bg-white text-[#222] pb-20 md:pb-0">
+      <nav className="sticky top-0 z-50 hidden bg-[#1c1c1e] px-6 py-3 text-white md:flex md:items-center md:gap-6">
+        <span className="flex items-center gap-2 text-lg font-semibold">
           <Calculator size={20} />
           Arbitragem Pro
         </span>
-        <div className="flex gap-1 ml-auto">
-          {tabs.map((t) => {
-            const Icon = t.icon;
-            return (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                  tab === t.id ? 'bg-[#2c2c2e] text-white' : 'text-gray-400 hover:text-white hover:bg-[#2c2c2e]/50'
-                }`}
-              >
-                <Icon size={16} />
-                {t.label}
-              </button>
-            );
-          })}
+        <div className="ml-auto flex gap-1">
+          {tabs.map((t) => renderTabButton(t))}
         </div>
       </nav>
 
-      <div className="p-5 max-w-[1300px] mx-auto text-[16px]">
+      <div className="mx-auto max-w-[1300px] p-4 text-[16px] sm:p-5">
         {tab === 'calculator' && (
           <ArbitrageCalculator
             state={calcState}
@@ -76,6 +81,16 @@ export default function App() {
         {tab === 'capture' && <TicketCapture onSaved={triggerRefresh} />}
         {tab === 'dashboard' && <Dashboard refreshKey={refreshKey} />}
       </div>
+
+      <nav
+        aria-label="Navegação principal"
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-[#1c1c1e] text-white shadow-[0_-4px_16px_rgba(0,0,0,0.18)] md:hidden"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <div className="mx-auto flex h-16 max-w-md items-stretch px-2">
+          {tabs.map((t) => renderTabButton(t, true))}
+        </div>
+      </nav>
     </div>
   );
 }
