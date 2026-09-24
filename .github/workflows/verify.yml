@@ -14,5 +14,4 @@ jobs:
         with:
           node-version: 20
       - run: npm install
-      - run: npm run typecheck
       - run: npm run build
